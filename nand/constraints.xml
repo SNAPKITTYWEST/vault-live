@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  vault-live/nand/constraints.xml
+  NAND Gate Trust Window — Constraint DSL
+  Author: Ahmad Ali Parr × SnapKitty
+
+  Trust semantics:
+    Assertion TRUSTED when NAND(branch1, branch2, ...) = True AND H <= 0.20.
+    NAND is True when at least one branch is False.
+
+  Branch design for VaultUser vs SuperAdmin:
+    Branch 1 (session-check): Role present + SessionIndex present.
+      VaultUser:  True (has both)
+      SuperAdmin: True (has both)
+
+    Branch 2 (privilege-escalation): Role eq 'SuperAdmin'
+      VaultUser:  False (role is VaultUser, not SuperAdmin)
+      SuperAdmin: True  (role IS SuperAdmin)
+
+  VaultUser:  NAND(True, False) = NOT(True AND False) = NOT(False) = True  -> TRUSTED
+  SuperAdmin: NAND(True, True)  = NOT(True AND True)  = NOT(True)  = False -> BLOCKED
+
+  This is the security property: an attacker with max privileges satisfies ALL
+  branches simultaneously, causing NAND to output False and blocking the assertion.
+-->
+<vl:ConstraintSet
+    xmlns:vl="urn:vault-live:nand:1.0"
+    version="1.0"
+    entropy-max-nats="0.20">
+
+  <vl:TrustWindow id="main">
+
+    <vl:NAND id="root">
+
+      <!-- Branch 1: Session integrity — present for any authenticated user.
+           VaultUser and SuperAdmin both pass this.
+           Missing session or role fails here, making NAND trivially True
+           (but the user lacks required attributes regardless). -->
+      <vl:AND id="session-check">
+        <vl:Leaf id="role-present"
+                 attribute="Role"
+                 predicate="present"/>
+        <vl:Leaf id="session-present"
+                 attribute="SessionIndex"
+                 predicate="present"/>
+      </vl:AND>
+
+      <!-- Branch 2: Privilege escalation probe.
+           True ONLY for SuperAdmin.
+           VaultUser fails this -> NAND(True, False) = True -> TRUSTED.
+           SuperAdmin passes this -> NAND(True, True) = False -> BLOCKED. -->
+      <vl:AND id="privilege-escalation">
+        <vl:Leaf id="admin-block"
+                 attribute="Role"
+                 predicate="eq"
+                 value="SuperAdmin"/>
+      </vl:AND>
+
+    </vl:NAND>
+
+  </vl:TrustWindow>
+
+  <vl:EntropyPolicy max-nats="0.20" reject-on-exceed="true"/>
+
+</vl:ConstraintSet>

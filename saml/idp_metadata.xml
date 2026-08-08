@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  vault-live IdP Metadata
+  EntityID: https://vault-live.local/idp
+  The IdP signing certificate here is the verification root for all assertions.
+  SP loads this document to locate the SSO endpoint and validate signatures.
+-->
+<md:EntityDescriptor
+    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+    entityID="https://vault-live.local/idp"
+    validUntil="2027-01-01T00:00:00Z">
+
+  <md:IDPSSODescriptor
+      WantAuthnRequestsSigned="true"
+      protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+
+    <!-- IdP signing certificate (DER/Base64) — verification root for assertions -->
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo>
+        <ds:X509Data>
+          <ds:X509Certificate>
+            PLACEHOLDER_IDP_SIGNING_CERT
+          </ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+
+    <md:NameIDFormat>
+      urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+    </md:NameIDFormat>
+
+    <!-- SSO endpoint — HTTP-Redirect for AuthnRequest -->
+    <md:SingleSignOnService
+        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        Location="https://vault-live.local/idp/sso"/>
+
+    <!-- SSO endpoint — HTTP-POST for Response (alternative) -->
+    <md:SingleSignOnService
+        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        Location="https://vault-live.local/idp/sso"/>
+
+  </md:IDPSSODescriptor>
+
+</md:EntityDescriptor>
